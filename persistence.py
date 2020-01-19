@@ -8,11 +8,11 @@ class Employee(object):
         self.id = id
         self.name = name
         self.salary = salary
-        self.coffee_stand= coffee_stand
+        self.coffee_stand = coffee_stand
 
 
 class Product(object):
-    def __init__(self, id, description, price,quantity):
+    def __init__(self, id, description, price, quantity):
         self.id = id
         self.description = description
         self.price = price
@@ -25,8 +25,9 @@ class Coffee_stand(object):
         self.location = location
         self.number_of_employees = number_of_employees
 
+
 class Activity(object):
-    def __init__(self, product_id, quantity, activator_id,date):
+    def __init__(self, product_id, quantity, activator_id, date):
         self.product_id = product_id
         self.quantity = quantity
         self.activator_id = activator_id
@@ -42,7 +43,7 @@ class _Employee:
     def insert(self, employee):
         self._conn.execute("""
                INSERT INTO Employees (id, name,salary,coffee_stand) VALUES (?, ?, ?, ?)
-           """, [employee.id, employee.name,employee.salary,employee.coffee_stand])
+           """, [employee.id, employee.name, employee.salary, employee.coffee_stand])
 
     def find(self, employee):
         c = self._conn.cursor()
@@ -52,6 +53,7 @@ class _Employee:
 
         return Employee(*c.fetchone())
 
+
 class _Supplier:
     def __init__(self, conn):
         self._conn = conn
@@ -59,7 +61,7 @@ class _Supplier:
     def insert(self, supplier):
         self._conn.execute("""
                INSERT INTO Employees (id, name,contact_information) VALUES (?, ?, ?)
-           """, [supplier.id, supplier.name,supplier.contact_information])
+           """, [supplier.id, supplier.name, supplier.contact_information])
 
     def find(self, employee):
         c = self._conn.cursor()
@@ -87,6 +89,11 @@ class _Product:
 
         return Product(*c.fetchone())
 
+    def checkIfLeagl(self, idToCheck, quantityToCheck):
+        ans = self.find(idToCheck)
+        if ans['quantity'] >= quantityToCheck:
+            return 1
+        return 0
 
 class _Coffee_stand:
     def __init__(self, conn):
@@ -104,6 +111,7 @@ class _Coffee_stand:
         """).fetchall()
 
         return Coffee_stand(*c.fetchone())
+
 
 class _Activity:
     def __init__(self, conn):
@@ -139,30 +147,41 @@ class _Repository(object):
 
     def create_tables(self):
         self._conn.executescript("""
-            CREATE TABLE students (
-                id      INT         PRIMARY KEY,
-                name    TEXT        NOT NULL
+            CREATE TABLE Employees (
+                id      INTEGER        PRIMARY KEY,
+                name    TEXT        NOT NULL,
+                salary  REAL    NOT NULL,
+                coffee_stand    INTEGER REFERENCES  Coffee_stand(id)
             );
 
-            CREATE TABLE assignments (
-                num                 INT     PRIMARY KEY,
-                expected_output     TEXT    NOT NULL
+            CREATE TABLE Suppliers (
+                id                 INTEGER     PRIMARY KEY,
+                name     TEXT    NOT NULL,
+                contact_information  REAL,
             );
 
-            CREATE TABLE grades (
-                student_id      INT     NOT NULL,
-                assignment_num  INT     NOT NULL,
-                grade           INT     NOT NULL,
-
-                FOREIGN KEY(student_id)     REFERENCES students(id),
-                FOREIGN KEY(assignment_num) REFERENCES assignments(num),
-
-                PRIMARY KEY (student_id, assignment_num)
+            CREATE TABLE Products (
+                id      INTEGER     PRIMARY KEY,
+                description  TEXT     NOT NULL,
+                price           REAL     NOT NULL,
+                quantity    INTEGER NOT NULL
+            );
+            
+            CREATE TABLE Coffee_stands (
+                id  INTEGER PRIMARY KEY
+                description TEXT    NOT NULL
+                price REAL NOT NULL
+                quantity    INTEGER NOT NULL
+            );
+            CREATE TABLE Activities (
+                product_id INTEGER  INTEGER REFERENCES  Product(id)
+                quantity INTEGER    NOT NULL
+                activator_id INTEGER NOT NULL 
+                date    DATE    NOT NULL
+                
             );
         """)
 
-
-# see code in previous version...
 
 # the repository singleton
 repo = _Repository()
