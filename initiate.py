@@ -6,7 +6,7 @@ import sys
 import atexit
 
 
-def parse_file(filename, cursor):
+def parse_file(filename):
     file = open(filename)
     for line in file:
         line = line.strip(' \t\n\r')
@@ -35,15 +35,13 @@ def parse_file(filename, cursor):
         repo.coffee_stand(persistence.Coffee_stand(_id, _location, _emp))
 
 
-def create_tables(cursor):
+def create_tables():
     repo.create_tables()
 
 
 def close_db(dbcon):
     dbcon.commit()
     dbcon.close()
-    os.remove('moncafe.db')
-
 atexit.register(close_db)
 
 
@@ -56,8 +54,8 @@ def main(args):
     if DBExist:
         os.remove('moncafe.db')
     if not DBExist:
-        create_tables(cursor)
-        parse_file(filename, cursor)
+        create_tables()
+        parse_file(filename)
 
 
 if __name__ == '__main__':
