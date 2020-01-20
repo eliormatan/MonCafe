@@ -61,6 +61,34 @@ class Activity(object):
         return str
 
 
+class EmployeeReport(object):
+    def __init__(self, name, salary, location, total):
+        self.name = name
+        self.salary = salary
+        self.location = location
+        self.total = total
+
+    def __str__(self):
+        str = '{} {} {} {}'.format(self.name, self.salary, self.location, self.total)
+        return str
+
+
+class ActivitesReport(object):
+    def __init__(self, date, desc, quan, sell, supp):
+        self.date = date
+        self.desc = desc
+        self.quan = quan
+        self.sell = sell
+        self.supp = supp
+
+    def __str__(self):
+        if(self.sell is None):
+            str = "({}, '{}', {}, {}, '{}')".format(self.date, self.desc, self.quan, self.sell, self.supp)
+        else:
+            str = "({}, '{}', {}, '{}', {})".format(self.date, self.desc, self.quan, self.sell, self.supp)
+        return str
+
+
 # Data Access Objects:
 # All of these are meant to be singletons
 class _Employees:
@@ -89,17 +117,6 @@ class _Employees:
 
         return [Employee(*row) for row in all]
 
-    def findWorker(self, workID):
-        c = self._conn.cursor()
-        c.execute("""
-                SELECT name FROM Employees
-                WHERE id=(?)
-            """, [workID])
-        ans = c.fetchone()
-        if ans is None:
-            return "None"
-        return ans[0]
-
 
 class _Suppliers:
     def __init__(self, conn):
@@ -126,17 +143,6 @@ class _Suppliers:
         """).fetchall()
 
         return [Supplier(*row) for row in all]
-
-    def findSupplier(self, supID):
-        c = self._conn.cursor()
-        c.execute("""
-                SELECT name FROM Suppliers
-                WHERE id=(?)
-            """, [supID])
-        ans = c.fetchone()
-        if ans is None:
-            return "None"
-        return ans[0]
 
 
 class _Products:
@@ -165,6 +171,14 @@ class _Products:
 
         return [Product(*row) for row in all]
 
+    def getProductPrice(self, proID):
+        c = self._conn.cursor()
+        c.execute("""
+                SELECT price FROM Products WHERE id = (?)
+            """, [proID])
+
+        return c.fetchone()[0]
+
     def checkIfLeagl(self, idToCheck, quantityToCheck):
         ans = self.find(idToCheck)
         if ans.quantity >= int(quantityToCheck):
@@ -178,22 +192,6 @@ class _Products:
         c.execute("""
                 UPDATE Products SET quantity=(?) WHERE id=(?)
             """, [newQuan, idToUpdate])
-
-    def getProductPrice(self, proID):
-        c = self._conn.cursor()
-        c.execute("""
-                SELECT price FROM Products WHERE id = (?)
-            """, [proID])
-
-        return c.fetchone()[0]
-
-    def getProductName(self, proID):
-        c = self._conn.cursor()
-        c.execute("""
-                SELECT description FROM Products WHERE id = (?)
-            """, [proID])
-
-        return c.fetchone()[0]
 
 
 class _Coffee_stands:
@@ -255,7 +253,45 @@ class _Activitys:
             total += abs(quantity * price)
         return total
 
-    # The Repository
+
+class _EmployessReports:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def find_all(self, repo):
+        c = self._conn.cursor()
+        allIDs = c.execute("""
+             SELECT Employees.id FROM Employees
+             ORDER BY Employees.name
+         """).fetchall()
+
+        all = c.execute("""
+             SELECT Employees.id,Employees.name,Employees.salary,Coffee_stands.location FROM Employees
+             JOIN Coffee_stands ON Coffee_stands.id = Employees.coffee_stand
+             ORDER BY Employees.name
+         """).fetchall()
+
+        return [EmployeeReport(row[1], row[2], row[3], repo.activitys.findProfitByID(row[0], repo)) for row in all]
+
+
+class _ActivitiesReport:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def find_all(self):
+        c = self._conn.cursor()
+        all = c.execute("""
+             SELECT Activities.date,Products.description,Activities.quantity,Employees.name,Suppliers.name FROM Activities
+             JOIN Products ON Products.id = Activities.product_id
+             left JOIN Employees ON Employees.id = Activities.activator_id
+             left JOIN Suppliers ON Suppliers.id = Activities.activator_id
+             ORDER BY Activities.date DESC
+         """).fetchall()
+
+        return [ActivitesReport(*row) for row in all]
+
+
+# The Repository
 
 
 class _Repository(object):
@@ -266,6 +302,8 @@ class _Repository(object):
         self.products = _Products(self.conn)
         self.activitys = _Activitys(self.conn)
         self.coffee_stands = _Coffee_stands(self.conn)
+        self.employeesReport = _EmployessReports(self.conn)
+        self.activitiesReport = _ActivitiesReport(self.conn)
 
     def _close(self):
         self.conn.commit()

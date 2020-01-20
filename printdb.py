@@ -25,31 +25,18 @@ def main():
     print("Suppliers")
     for item in list:
         print(item)
+    print("")
+    print("Employees Report")
+    list = repo.employeesReport.find_all(repo)
+    for item in list:
+        print(item)
     list = repo.activitys.find_all()
     if len(list) != 0:
         print("")
-        print("Employees Report")
-        list = repo.employees.find_all()
-        for item in list:
-            str = '({} {} {} {})'.format(item.name, item.salary, repo.coffee_stands.findLocationByID(item.coffee_stand),
-                                         repo.activitys.findProfitByID(item.id, repo))
-            print(str)
-        print("")
-        list = repo.activitys.find_all()
         print("Activities")
+        list = repo.activitiesReport.find_all()
         for item in list:
-            emp = repo.employees.findWorker(item.activator_id)
-            sup = repo.suppliers.findSupplier(item.activator_id)
-            modEmp = emp
-            if emp != "None":
-                modEmp = ("'{}'").format(emp)
-            modSup = sup
-            if sup != "None":
-                modSup = ("'{}'").format(sup)
-            str = '({}, {}, {}, {}, {})'.format(item.date, ("'{}'").format(repo.products.getProductName(item.product_id)), item.quantity,
-                                                modEmp,
-                                                modSup)
-            print(str)
+            print(item)
     repo._close()
 
 
